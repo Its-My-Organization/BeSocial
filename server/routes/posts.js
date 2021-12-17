@@ -5,8 +5,10 @@ const User = require("../models/User");
 // CREATE A POST
 router.post("/", async (req, res) => {
   try {
+    console.log("unsaved post", req.body);
     const newPost = new Post(req.body);
     const savedPost = await newPost.save();
+    console.log("saved post", savedPost);
     return res.status(200).json(savedPost);
   } catch (error) {
     return res.status(500).json(error);
@@ -89,21 +91,14 @@ router.get("/:id", async (req, res) => {
 router.get("/timeline/:userId", async (req, res) => {
   try {
     const currentUser = await User.findById(req.params.userId);
-    const userPosts = await Post.find({ userId: currentUser._id });
+    const userPosts = await Post.find({ userId: req.params.userId });
     const friendPosts = await Promise.all(
       currentUser.followings.map((friend) => Post.find({ userId: friend }))
     );
-
-    let a = ["a", "b", "c"];
-    let b = [1, 2, 3];
-
-    // let c = userPosts.concat(...friendPosts);
-
-    console.log("server friends posts", friendPosts);
-    console.log("server users posts", userPosts);
     res.status(200).json(userPosts.concat(...friendPosts));
-    res.status(200).json(posts);
+    // res.status(200).json(posts);
   } catch (error) {
+    console.log("error", error);
     return res.status(500).json(error);
   }
 });

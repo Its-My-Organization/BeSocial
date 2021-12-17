@@ -1,81 +1,17 @@
-const dotenv = require("dotenv");
-dotenv.config();
-const express = require("express");
-const app = express();
-const mongoose = require("mongoose");
-const morgan = require("morgan");
-const cors = require("cors");
-const helmet = require("helmet");
-
-const { MONGO_URL, APP_PORT } = process.env;
-const Grid = require("gridfs-stream");
-const path = require("path");
-
-// middlewares
-app.use(express.json());
-app.use(helmet());
-app.use(morgan("common"));
-app.use(cors());
-
-// Routes
-const userRoutes = require("./routes/users");
-const authRoutes = require("./routes/auth");
-const postRoutes = require("./routes/posts");
-// const imageRoutes = require("./routes/images");
-
-// Create mongo connection
-// mongoose.connect(MONGO_URL, {
-//   useUnifiedTopology: true,
-//   useNewUrlParser: true,
-//   useFindAndModify: false,
-// });
-// var conn = mongoose.connection;
-// conn.on("error", console.error.bind(console, "connection error:"));
-// conn.once("open", function callback() {
-//   console.log("db connection open");
-// });
-
-// // init gfs
-// let gfs;
-// let chooseCollection;
-
-// conn.once("open", () => {
-//   // init stream
-//   gfs = Grid(conn.db, mongoose.mongo);
-//   // chooseCollection = function (type) {
-//   //   console.log("lets choose collection", type);
-//   //   return gfs.collection(type);
-//   // };
-//   gfs.collection("PostImages");
-// });
-
-// Create mongo connection
-mongoose.connect(MONGO_URL, {
-  useUnifiedTopology: true,
-  useNewUrlParser: true,
-  useFindAndModify: false,
-});
-const conn = mongoose.createConnection(MONGO_URL);
-
-// Init gfs
-let gfs;
-
-conn.once("open", () => {
-  // Init stream
-  gfs = Grid(conn.db, mongoose.mongo);
-  gfs.collection("PostImages");
-});
-
-app.use("/images", express.static(path.join(__dirname, "public/images")));
-
+const router = require("express").Router();
+// const gfs = require("../server");
+const { MONGO_URL } = process.env;
 const { GridFsStorage } = require("multer-gridfs-storage");
 const multer = require("multer");
+// const myFuc = require("../server");
 
+// console.log("gfs", gfs);
 // create storage engine
 const fsStorage = new GridFsStorage({
   url: MONGO_URL,
   file: (req, file) => {
     const { username, type, postId } = req.query;
+    console.log("this is  storage", req.query);
 
     let filename =
       type + "." + username + Date.now() + path.extname(file.originalname);
@@ -116,6 +52,7 @@ const backupStorage = new GridFsStorage({
   url: MONGO_URL,
   file: (req, file) => {
     const { username, type, postId } = req.query;
+    console.log("this is backup storage");
 
     let filename =
       type + "." + username + Date.now() + path.extname(file.originalname);
@@ -153,10 +90,11 @@ const backupUpload = multer({ storage: backupStorage });
 
 // To upload an image
 // The second parameter to upload backup image doesnot work currently
-app.post(
-  "/api/upload",
+router.post(
+  "/upload",
   [fsUpload.single("file"), backupUpload.single("file")],
   async (req, res) => {
+    console.log("posted file", req.file);
     try {
       return res.status(200).json({
         message: "File uploaded successfully",
@@ -169,7 +107,26 @@ app.post(
 );
 
 // Get all post or profile or cover images of a perticular user
-app.get("/api/images", (req, res) => {
+router.get("/", (req, res) => {
+  // switch (req.query.type) {
+  //   case "post":
+  //     chooseCollection("PostImages");
+  //     // gfs.collection("PostImages");
+  //     break;
+  //   case "profile":
+  //     chooseCollection("ProfileImages");
+  //     // gfs.collection("ProfileImages");
+  //     break;
+  //   case "cover":
+  //     chooseCollection("CoverImages");
+  //     // gfs.collection("CoverImages");
+  //     break;
+  //   default:
+  //     chooseCollection("Images");
+  //     // gfs.collection("Images");
+  //     break;
+  // }
+  // myFuc(req.query.type);
   gfs.files
     .find()
     .sort({ uploadDate: 1 })
@@ -191,8 +148,9 @@ app.get("/api/images", (req, res) => {
 });
 
 // To get the info of a single image
-app.get("/api/images/info/:filename", async (req, res) => {
-  const image = await gfs.files.findOne({ filename: req.params.filename });
+router.get("/info/:filename", async (req, res) => {
+  const image = await gfs.files.findOne({ _id: "61bc3c4dc3bbf5069874cf0c" });
+  console.log("query", image);
 
   if (!image) return res.status(404).json({ err: "No File Exists" });
 
@@ -206,11 +164,11 @@ app.get("/api/images/info/:filename", async (req, res) => {
 });
 
 // Display a single image
-app.get("/api/images/view/:filename", async (req, res) => {
+router.get("/view/:filename", async (req, res) => {
   let image = await gfs.files.findOne({ filename: req.params.filename });
 
   // Check if image
-  if (image.contentType === "image/jpeg" || image.contentType === "image/png") {
+  if (image.contentType === "image/jpeg" || image.contentType === "img/png") {
     // To display image to browser
     var rstream = gfs.createReadStream({ filename: image.filename });
     var bufs = [];
@@ -235,7 +193,7 @@ app.get("/api/images/view/:filename", async (req, res) => {
 });
 
 // To download an image
-app.get("/api/images/download/:filename", async (req, res) => {
+router.get("/download/:filename", async (req, res) => {
   const image = await gfs.files.findOne({ filename: req.params.filename });
 
   if (!image) return res.status(404).json({ err: "No File Exists" });
@@ -249,7 +207,7 @@ app.get("/api/images/download/:filename", async (req, res) => {
 });
 
 // To delete an image
-app.delete("/api/images/:filename", async (req, res) => {
+router.delete("/:filename", async (req, res) => {
   try {
     await gfs.remove({ filename: req.params.filename, root: "Images" });
   } catch (err) {
@@ -257,9 +215,4 @@ app.delete("/api/images/:filename", async (req, res) => {
   }
 });
 
-app.use("/api/users", userRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/posts", postRoutes);
-// app.use("/api/images", imageRoutes);
-
-app.listen(APP_PORT, () => console.log(`Server started on port ${APP_PORT}`));
+module.exports = router;

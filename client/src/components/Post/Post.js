@@ -5,14 +5,22 @@ import axios from "axios";
 import { format } from "timeago.js";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
+import http from "http";
 
 function Post({ post }) {
   const [like, setLike] = useState(post.likes.length);
   const [isLiked, setIsLiked] = useState(false);
   const [user, setUser] = useState({});
+  // const [permit, setPermit] = useState(false);
 
   const PF = process.env.REACT_APP_PUBLIC_FOLDER;
+  const SI = process.env.REACT_APP_GET_IMAGES;
   const { user: currentUser } = useContext(AuthContext);
+
+  const downloadImage = async () => {
+    // alert("Do you want to download this image");
+    await http.get("/images/download/" + post.image);
+  };
 
   useEffect(() => {
     setIsLiked(post.likes.includes(currentUser._id));
@@ -63,9 +71,12 @@ function Post({ post }) {
         <div className="postCenter">
           <span className="postText">{post?.desc}</span>
           <img
-            src={post.image ? PF + post.image : ""}
+            src={post.image ? SI + "download/" + post.image : ""}
+            // src={post.image ? PF + post.image : ""}
             className="postImage"
-            alt=""
+            alt=" PostImage"
+            loading="lazy"
+            onClick={downloadImage}
           />
         </div>
         <div className="postBottom">

@@ -23,27 +23,37 @@ function Share() {
       userId: user._id,
       desc: desc.current.value,
       image: "",
+      imageId: "",
+      filename: "",
     };
+
     if (file) {
+      let imageId = (Math.random() + 1).toString(36).substring(2);
       let data = new FormData();
       const filename = Date.now() + file.name;
       data.append("name", filename);
       data.append("file", file);
       newPost.image = filename;
+      newPost.imageId = imageId;
 
       try {
-        await axios.post(`/upload?userData=${user.email}`, data);
+        var savedImage = await axios.post(
+          `/upload?username=${user._id}&type=post&postId=${imageId}`,
+          data
+        );
       } catch (error) {
         console.log(error);
         document.alert(error);
       }
-    }
 
-    try {
-      await axios.post("/posts", newPost);
-      window.location.reload();
-    } catch (error) {
-      console.log(error);
+      try {
+        newPost.image = savedImage.data.file.filename;
+        await axios.post("/posts", newPost);
+        window.location.reload();
+      } catch (error) {
+        console.log(error);
+        document.alert(error);
+      }
     }
   };
 

@@ -32,7 +32,7 @@ function Share() {
       newPost.image = filename;
 
       try {
-        await axios.post("/upload", data);
+        await axios.post(`/upload?userData=${user.email}`, data);
       } catch (error) {
         console.log(error);
         document.alert(error);
@@ -83,6 +83,7 @@ function Share() {
                 style={{ display: "none" }}
                 type="file"
                 id="file"
+                name="file"
                 accept=".png, .jpg, .jpeg"
                 onChange={(e) => setFile(e.target.files[0])}
               />

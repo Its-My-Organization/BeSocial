@@ -29,10 +29,10 @@ SPECIAL FEATURES
 
 ARTIFICIAL INTELLIGENCE
 
-[+] Image Search 
 [+] Audio Search
-[+] Face Recognition
-[+] Post Filtering
+[+] Face Recognition for auto tagging
+[+] Post Filtering using NLP
+[+] Image Search (optional)
 [+] Recommendation System
 [+] Digital Assistant
 
@@ -45,5 +45,3 @@ MISCELLANEOUS FEATURES
 [+] Karoake Story  
 [+] Live Posting
 [+] Ask Me Anthing
-[+] 
-[+] 

@@ -1,20 +1,42 @@
 import { CircularProgress } from "@material-ui/core";
-import axios from "axios";
+// import axios from "axios";
 import React, { useContext, useRef } from "react";
+import { useToast } from "@chakra-ui/toast";
 import { useNavigate } from "react-router-dom";
-// import { signupCall } from "../../apiCalls";
+import { signupCall } from "../../apiCalls";
 import { AuthContext } from "../../context/AuthContext";
+import { useMutation } from "react-query";
+import { useCookies } from "react-cookie";
 import "./styles.css";
 
 function Register() {
+  const { isFetching, dispatch } = useContext(AuthContext);
+  const toast = useToast();
+  const [, setCookie] = useCookies(["jwt", "user"]);
+  const { isLoading, error, isError, mutateAsync } = useMutation(
+    "register",
+    signupCall,
+    {
+      onSuccess: (data) => {
+        dispatch({ type: "REFRESH_SUCCESS", payload: data });
+        setCookie("jwt", data.accessToken, { secure: true, sameSite: "None" });
+        setCookie("user", data.user, { secure: true, sameSite: "None" });
+        navigate("/");
+      },
+    }
+  );
+
+  if (isError) {
+    console.log("error message", error.message);
+    toast({ title: error.message, status: "error" });
+  }
+
   const username = useRef();
   const email = useRef();
   const password = useRef();
   const passwordAgain = useRef();
 
   const navigate = useNavigate();
-
-  const { isFetching } = useContext(AuthContext);
 
   const loginHandler = () => {
     navigate("/login");
@@ -30,9 +52,10 @@ function Register() {
         email: email.current.value,
         password: password.current.value,
       };
+      await mutateAsync(user);
       // signupCall(user, dispatch);
-      await axios.post("/auth/register", user);
-      navigate("/login");
+      // await axios.post("/auth/register", user);
+      // navigate("/login");
     }
   };
 
@@ -77,7 +100,12 @@ function Register() {
               placeholder="Password Again"
               className="loginInput"
             />
-            <button className="loginButton" type="submit" disabled={isFetching}>
+            <button
+              isloading={isLoading.toString()}
+              className="loginButton"
+              type="submit"
+              disabled={isFetching}
+            >
               {isFetching ? (
                 <CircularProgress color="secondary" size="20px" />
               ) : (

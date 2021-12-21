@@ -2,11 +2,22 @@ import "./topbar.css";
 import { Chat, Notifications, Person, Search } from "@material-ui/icons";
 import { Link } from "react-router-dom";
 import { useContext } from "react";
+import { useNavigate } from "react-router";
 import { AuthContext } from "../../context/AuthContext";
+import { useCookies } from "react-cookie";
 
 function Topbar() {
   const PF = process.env.REACT_APP_PUBLIC_FOLDER;
-  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const { user, dispatch } = useContext(AuthContext);
+  const [, , removeCookie] = useCookies(["jwt", "user"]);
+
+  const logoutHandler = () => {
+    removeCookie("jwt");
+    removeCookie("user");
+    dispatch({ type: "ACCESS_TOKEN", payload: { jwt: "", user: null } });
+    navigate("/login");
+  };
 
   return (
     <div className="topbarContainer">
@@ -27,7 +38,9 @@ function Topbar() {
       </div>
       <div className="topbarRight">
         <div className="topbarLinks">
-          <span className="topbarLink">Homepage</span>
+          <span className="topbarLink" onClick={logoutHandler}>
+            Log Out
+          </span>
           <span className="topbarLink">{user.username}</span>
         </div>
         <div className="topbarIcons">

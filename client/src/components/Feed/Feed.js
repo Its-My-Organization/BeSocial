@@ -7,14 +7,19 @@ import { useParams } from "react-router";
 
 function Feed() {
   const [Posts, setPosts] = useState([]);
-  const { user } = useContext(AuthContext);
+  const { user, accessToken } = useContext(AuthContext);
   const { username } = useParams();
 
   useEffect(() => {
     const fetchPosts = async () => {
+      console.log("username", username);
       const res = username
-        ? await axios.get("/posts/profile/" + username)
-        : await axios.get("/posts/timeline/" + user._id);
+        ? await axios.get("/posts/profile/" + username, {
+            headers: { authorization: "Bearer " + accessToken },
+          })
+        : await axios.get("/posts/timeline?email=" + user.email, {
+            headers: { authorization: "Bearer " + accessToken },
+          });
       setPosts(
         res.data.sort((p1, p2) => {
           return new Date(p2.createdAt) - new Date(p1.createdAt);

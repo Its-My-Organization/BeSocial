@@ -1,134 +1,24 @@
 const router = require("express").Router();
-const bcrypt = require("bcrypt");
-const User = require("../models/User");
+const userController = require("../controllers/userController");
+const isAuthenticated = require("../middlewares/auth");
+const isPermitted = require("../middlewares/auth");
 
 // UPDATE USER
-router.put("/:id", async (req, res) => {
-  if (req.body.userId === req.params.id || req.body.isAdmin) {
-    if (req.body.password) {
-      try {
-        const salt = await bcrypt.genSalt(10);
-        req.body.password = await bcrypt.hash(req.body.password, salt);
-      } catch (error) {
-        return res.status(500).json(error);
-      }
-    }
-    try {
-      const user = await User.findByIdAndUpdate(req.params.id, {
-        $set: req.body,
-      });
-      return res.status(200).json("Account has been updated");
-    } catch (error) {
-      return res.status(500).json(error);
-    }
-  } else {
-    return res.status(403).json("You can update only your account");
-  }
-});
+router.put("/:id", [isAuthenticated], userController.update);
 
 // DELETE USER
-router.delete("/:id", async (req, res) => {
-  if (req.body.userId === req.params.id || req.body.isAdmin) {
-    try {
-      const user = await User.findByIdAndDelete(req.params.id);
-      return res.status(200).json("Account has been deleted");
-    } catch (error) {
-      return res.status(500).json(error);
-    }
-  } else {
-    return res.status(403).json("You can delete only your account");
-  }
-});
+router.delete("/:id", [isAuthenticated], userController.delete);
 
 // GET A USER
-router.get("/", async (req, res) => {
-  const userId = req.query.userId;
-  const username = req.query.username;
-  try {
-    const user = userId
-      ? await User.findOne({ _id: userId }).select(
-          "-_v -password -isAdmin -createdAt -updatedAt"
-        )
-      : await User.findOne({ username: username }).select(
-          "-_v -password -isAdmin -createdAt -updatedAt"
-        );
-    return res.status(200).json(user);
-  } catch (error) {
-    return res.status(500).json(error);
-  }
-});
+router.get("/", isAuthenticated, userController.getUser);
 
 // Get friends
-router.get("/friends", async (req, res) => {
-  try {
-    const username = req.query.username;
-
-    const user = await User.findOne({ username: username }).select(
-      "-_v -password -isAdmin -createdAt -updatedAt"
-    );
-    const friends = await Promise.all(
-      user.followings.map((friendId) => {
-        return User.findById(friendId).select(
-          "-_v -password -isAdmin -createdAt -updatedAt -followings -followers"
-        );
-      })
-    );
-    res.status(200).json(friends);
-  } catch (error) {
-    res.status(500).json(error);
-  }
-});
+router.get("/friends", isAuthenticated, userController.getFriends);
 
 // FOLLOW A USER
-router.put("/:id/follow", async (req, res) => {
-  if (req.body.userId !== req.params.id) {
-    try {
-      const user = await User.findById(req.params.id);
-      const currentUser = await User.findById(req.body.userId);
-
-      if (!user.followers.includes(req.body.userId)) {
-        await user.updateOne({
-          $push: { followers: req.body.userId },
-        });
-        await currentUser.updateOne({
-          $push: { followings: req.params.id },
-        });
-        return res.status(200).json("User has been followed");
-      } else {
-        return res.status(403).json("You have already followed this user");
-      }
-    } catch (error) {
-      return res.status(500).json(error);
-    }
-  } else {
-    return res.status(403).json("You cant follow yourself");
-  }
-});
+router.put("/:id/follow", isAuthenticated, userController.follow);
 
 // UNFOLLOW A USER
-router.put("/:id/unfollow", async (req, res) => {
-  if (req.body.userId !== req.params.id) {
-    try {
-      const user = await User.findById(req.params.id);
-      const currentUser = await User.findById(req.body.userId);
-
-      if (user.followers.includes(req.body.userId)) {
-        await user.updateOne({
-          $pull: { followers: req.body.userId },
-        });
-        await currentUser.updateOne({
-          $pull: { followings: req.params.id },
-        });
-        return res.status(200).json("User has been unfollowed");
-      } else {
-        return res.status(403).json("You dont follow this user");
-      }
-    } catch (error) {
-      return res.status(500).json(error);
-    }
-  } else {
-    return res.status(403).json("You cant follow or unfollow yourself");
-  }
-});
+router.put("/:id/unfollow", isAuthenticated, userController.unFollow);
 
 module.exports = router;

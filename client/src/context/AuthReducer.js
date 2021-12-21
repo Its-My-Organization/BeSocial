@@ -3,24 +3,36 @@ const AuthReducer = (state, action) => {
     case "LOGIN_START":
       return {
         user: null,
+        accessToken: "",
+        refreshToken: "",
         isFetching: true,
         error: false,
       };
+
     case "LOGIN_SUCCESS":
+      console.log("got here");
+      console.log(state, "action here", action.payload);
       return {
-        user: action.payload,
+        user: action.payload.user,
+        accessToken: action.payload.accessToken,
+        refreshToken: action.payload.refreshToken,
         isFetching: false,
         error: false,
       };
+
     case "LOGIN_FAILURE":
       return {
         user: null,
+        accessToken: "",
+        refreshToken: "",
         isFetching: false,
         error: action.payload,
       };
 
     case "SIGNUP_START":
       return {
+        accessToken: "",
+        refreshToken: "",
         user: null,
         isFetching: true,
         error: false,
@@ -28,6 +40,8 @@ const AuthReducer = (state, action) => {
 
     case "SIGNUP_SUCCESS":
       return {
+        accessToken: "",
+        refreshToken: "",
         user: action.payload,
         isFetching: false,
         error: false,
@@ -35,6 +49,33 @@ const AuthReducer = (state, action) => {
 
     case "SIGNUP_FAILURE":
       return {
+        accessToken: "",
+        refreshToken: "",
+        user: null,
+        isFetching: false,
+        error: action.payload,
+      };
+
+    case "ACCESS_TOKEN":
+      return {
+        ...state,
+        user: action.payload.user,
+        accessToken: action.payload.jwt,
+      };
+
+    case "REFRESH_SUCCESS":
+      return {
+        user: action.payload.user,
+        accessToken: action.payload.accessToken,
+        refreshToken: action.payload.refreshToken,
+        isFetching: false,
+        error: false,
+      };
+
+    case "REFRESH_FAILURE":
+      return {
+        accessToken: "",
+        refreshToken: "",
         user: null,
         isFetching: false,
         error: action.payload,

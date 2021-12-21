@@ -6,26 +6,44 @@ import {
   Navigate,
 } from "react-router-dom";
 import React, { useContext } from "react";
+import { QueryClient, QueryClientProvider } from "react-query";
 import { AuthContext } from "./context/AuthContext";
+import { useCookies } from "react-cookie";
+import { useEffect } from "react";
+const queryClient = new QueryClient();
 
 function App() {
-  const { user } = useContext(AuthContext);
+  const { accessToken, dispatch } = useContext(AuthContext);
+  const [cookies] = useCookies(["jwt"]);
+
+  useEffect(() => {
+    if (accessToken === "") {
+      const { jwt, user } = cookies;
+
+      if (jwt) dispatch({ type: "ACCESS_TOKEN", payload: { user, jwt } });
+    }
+  }, [dispatch, accessToken, cookies]);
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={user ? <Home /> : <Register />} />
-        <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
-        <Route
-          path="/register"
-          element={user ? <Navigate to="/" /> : <Register />}
-        />
-        <Route
-          path="/profile/:username"
-          element={user ? <Profile /> : <Navigate to="/register" />}
-        />
-      </Routes>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <Routes>
+          <Route path="/" element={accessToken ? <Home /> : <Register />} />
+          <Route
+            path="/login"
+            element={accessToken ? <Navigate to="/" /> : <Login />}
+          />
+          <Route
+            path="/register"
+            element={accessToken ? <Navigate to="/" /> : <Register />}
+          />
+          <Route
+            path="/profile/:username"
+            element={accessToken ? <Profile /> : <Navigate to="/register" />}
+          />
+        </Routes>
+      </Router>
+    </QueryClientProvider>
   );
 }
 
